@@ -1,0 +1,4 @@
+{
+  "recommendations": ["ms-python.python", "llvm-vs-code-extensions.vscode-clangd"],
+  "unwantedRecommendations": ["DavidGomes.platformio-ide-cursor"]
+}

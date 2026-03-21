@@ -1,0 +1,5 @@
+{
+  "clangd.arguments": [
+    "--query-driver=${env:USERPROFILE}/.platformio/packages/toolchain-atmelavr/bin/avr-g++.exe"
+  ]
+}

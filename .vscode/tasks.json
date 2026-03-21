@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PIO: Build",
+      "type": "shell",
+      "command": "python -m platformio run",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "always", "panel": "shared", "focus": false }
+    },
+    {
+      "label": "PIO: Upload",
+      "type": "shell",
+      "command": "python -m platformio run -t upload",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "PIO: Serial monitor",
+      "type": "shell",
+      "command": "python -m platformio device monitor",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true }
+    },
+    {
+      "label": "PIO: compile_commands (clangd)",
+      "type": "shell",
+      "command": "python -m platformio run -t compiledb",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "none",
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    }
+  ]
+}
