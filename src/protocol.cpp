@@ -24,6 +24,21 @@ static bool streqi(const char* a, const char* b) {
 
 static void reply_ok() { Serial.println(F("OK")); }
 
+static void print_help() {
+  Serial.println(F("=== Romeo USB — команды ==="));
+  Serial.println(F("MF     оба мотора вперёд"));
+  Serial.println(F("MB     оба мотора назад"));
+  Serial.println(F("MS     стоп обоих моторов"));
+  Serial.println(F("STOP   то же, что MS"));
+  Serial.println(F("M1 n   мотор 1, скорость -255..255"));
+  Serial.println(F("M2 n   мотор 2, скорость -255..255"));
+  Serial.println(F("S1 n   серво 1, угол 0..180"));
+  Serial.println(F("S2 n   серво 2, угол 0..180"));
+  Serial.println(F("FIRE   ИК-импульс (или IR)"));
+  Serial.println(F("PING   проверка связи"));
+  Serial.println(F("?      эта справка"));
+}
+
 static void reply_err_flash(const __FlashStringHelper* msg) {
   Serial.print(F("ERR "));
   Serial.println(msg);
@@ -55,6 +70,33 @@ static void handle_line(char* line) {
 
   if (streqi(line, "PING")) {
     Serial.println(F("PONG 1"));
+    return;
+  }
+
+  if (strcmp(line, "?") == 0 || streqi(line, "HELP") || streqi(line, "H")) {
+    print_help();
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "MF")) {
+    motor1_set(cfg::kMotorCruiseSpeed);
+    motor2_set(cfg::kMotorCruiseSpeed);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "MB")) {
+    motor1_set(static_cast<int16_t>(-cfg::kMotorCruiseSpeed));
+    motor2_set(static_cast<int16_t>(-cfg::kMotorCruiseSpeed));
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "MS")) {
+    motor1_set(0);
+    motor2_set(0);
+    reply_ok();
     return;
   }
 

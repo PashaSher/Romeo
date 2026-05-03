@@ -12,6 +12,8 @@ constexpr uint8_t kMotor1Dir = 4;
 constexpr uint8_t kMotor1Pwm = 5;
 constexpr uint8_t kMotor2Pwm = 6;
 constexpr uint8_t kMotor2Dir = 7;
+/** Скорость для команд MF/MB (оба мотора), модуль 1…255 */
+constexpr int16_t kMotorCruiseSpeed = 220;
 
 // --- Сервы: пины с ШИМ, не пересекаются с 4–7 ---
 constexpr uint8_t kServo1Pin = 9;
