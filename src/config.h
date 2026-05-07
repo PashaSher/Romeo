@@ -14,10 +14,28 @@ constexpr uint8_t kMotor2Pwm = 6;
 constexpr uint8_t kMotor2Dir = 7;
 /** Скорость для команд MF/MB (оба мотора), модуль 1…255 */
 constexpr int16_t kMotorCruiseSpeed = 220;
+/** Скорость для команд TL/TR (поворот на месте), модуль 1…255 */
+constexpr int16_t kMotorTurnSpeed = 200;
+/**
+ * Если true — TR/TL для «левый = M1, правый = M2».
+ * Поставьте false, если у вас наоборот по проводке.
+ */
+constexpr bool kMotor1IsLeft = true;
 
-// --- Сервы: пины с ШИМ, не пересекаются с 4–7 ---
-constexpr uint8_t kServo1Pin = 9;
-constexpr uint8_t kServo2Pin = 10;
+// --- Сервы башни (MG996R), пины с ШИМ, не пересекаются с моторами 4–7 ---
+constexpr uint8_t kServo1Pin = 9;   // PAN (поворот башни)
+constexpr uint8_t kServo2Pin = 10;  // TILT (вверх/вниз)
+
+// Лимиты и «дом» для башни (правьте под свою механику)
+constexpr uint8_t kPanMinDeg = 0;
+constexpr uint8_t kPanMaxDeg = 180;
+constexpr uint8_t kPanHomeDeg = 90;
+
+constexpr uint8_t kTiltMinDeg = 30;
+constexpr uint8_t kTiltMaxDeg = 150;
+constexpr uint8_t kTiltHomeDeg = 90;
+
+constexpr uint8_t kTurretStepDeg = 5;
 
 // --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
 constexpr uint8_t kIrLedPin = 11;

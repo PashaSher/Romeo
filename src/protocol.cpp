@@ -26,17 +26,28 @@ static void reply_ok() { Serial.println(F("OK")); }
 
 static void print_help() {
   Serial.println(F("=== Romeo USB — команды ==="));
-  Serial.println(F("MF     оба мотора вперёд"));
-  Serial.println(F("MB     оба мотора назад"));
-  Serial.println(F("MS     стоп обоих моторов"));
-  Serial.println(F("STOP   то же, что MS"));
-  Serial.println(F("M1 n   мотор 1, скорость -255..255"));
-  Serial.println(F("M2 n   мотор 2, скорость -255..255"));
-  Serial.println(F("S1 n   серво 1, угол 0..180"));
-  Serial.println(F("S2 n   серво 2, угол 0..180"));
-  Serial.println(F("FIRE   ИК-импульс (или IR)"));
-  Serial.println(F("PING   проверка связи"));
-  Serial.println(F("?      эта справка"));
+  Serial.println(F("MF       оба мотора вперёд"));
+  Serial.println(F("MB       оба мотора назад"));
+  Serial.println(F("MS/STOP  стоп обоих моторов"));
+  Serial.println(F("TL       разворот на месте влево"));
+  Serial.println(F("TR       разворот на месте вправо"));
+  Serial.println(F("TANK l r левая и правая гусеница, -255..255 каждая"));
+  Serial.println(F("M1 n     мотор 1, скорость -255..255"));
+  Serial.println(F("M2 n     мотор 2, скорость -255..255"));
+  Serial.println(F("PAN d    башня: поворот, угол с лимитами"));
+  Serial.println(F("TILT d   башня: наклон, угол с лимитами"));
+  Serial.println(F("TURRET p t  оба угла сразу"));
+  Serial.println(F("PANL [s] шаг влево  (по умолчанию kTurretStepDeg)"));
+  Serial.println(F("PANR [s] шаг вправо"));
+  Serial.println(F("TILTU [s] шаг вверх"));
+  Serial.println(F("TILTD [s] шаг вниз"));
+  Serial.println(F("HOME     башня в центр"));
+  Serial.println(F("POS      текущее: POS PAN <d> TILT <d>"));
+  Serial.println(F("S1 n     серво 1 (PAN), 0..180 без лимитов"));
+  Serial.println(F("S2 n     серво 2 (TILT), 0..180 без лимитов"));
+  Serial.println(F("FIRE/IR  ИК-импульс"));
+  Serial.println(F("PING     проверка связи"));
+  Serial.println(F("?        эта справка"));
 }
 
 static void reply_err_flash(const __FlashStringHelper* msg) {
@@ -96,6 +107,54 @@ static void handle_line(char* line) {
   if (streqi(line, "MS")) {
     motor1_set(0);
     motor2_set(0);
+    reply_ok();
+    return;
+  }
+
+  // --- Танковый поворот на месте ---
+  if (streqi(line, "TL") || streqi(line, "TR")) {
+    bool turn_right = streqi(line, "TR");
+    int16_t v = cfg::kMotorTurnSpeed;
+    int16_t left = turn_right ? +v : -v;
+    int16_t right = turn_right ? -v : +v;
+    if (cfg::kMotor1IsLeft) {
+      motor1_set(left);
+      motor2_set(right);
+    } else {
+      motor1_set(right);
+      motor2_set(left);
+    }
+    reply_ok();
+    return;
+  }
+
+  // TANK <left> <right> — танковая раскладка, каждая гусеница отдельно (-255..255)
+  if (streqi(line, "TANK")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    char* sp2 = strchr(sp, ' ');
+    if (!sp2) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    *sp2++ = '\0';
+    bool ok1 = false;
+    bool ok2 = false;
+    int16_t lv = parse_int(sp, ok1);
+    int16_t rv = parse_int(sp2, ok2);
+    if (!ok1 || !ok2) {
+      reply_err_flash(F("TANK_VAL"));
+      return;
+    }
+    if (cfg::kMotor1IsLeft) {
+      motor1_set(lv);
+      motor2_set(rv);
+    } else {
+      motor1_set(rv);
+      motor2_set(lv);
+    }
     reply_ok();
     return;
   }
@@ -160,6 +219,103 @@ static void handle_line(char* line) {
       return;
     }
     servo2_set_angle(static_cast<uint8_t>(v));
+    reply_ok();
+    return;
+  }
+
+  // --- Башня ---
+  if (streqi(line, "HOME")) {
+    turret_home();
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "POS")) {
+    Serial.print(F("POS PAN "));
+    Serial.print(pan_get());
+    Serial.print(F(" TILT "));
+    Serial.println(tilt_get());
+    return;
+  }
+
+  if (streqi(line, "PAN")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    bool ok = false;
+    int16_t v = parse_int(sp, ok);
+    if (!ok) {
+      reply_err_flash(F("PAN_VAL"));
+      return;
+    }
+    pan_set(v);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "TILT")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    bool ok = false;
+    int16_t v = parse_int(sp, ok);
+    if (!ok) {
+      reply_err_flash(F("TILT_VAL"));
+      return;
+    }
+    tilt_set(v);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "TURRET")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    char* sp2 = strchr(sp, ' ');
+    if (!sp2) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    *sp2++ = '\0';
+    bool ok1 = false;
+    bool ok2 = false;
+    int16_t pv = parse_int(sp, ok1);
+    int16_t tv = parse_int(sp2, ok2);
+    if (!ok1 || !ok2) {
+      reply_err_flash(F("TURRET_VAL"));
+      return;
+    }
+    pan_set(pv);
+    tilt_set(tv);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "PANL") || streqi(line, "PANR") ||
+      streqi(line, "TILTU") || streqi(line, "TILTD")) {
+    int16_t step = cfg::kTurretStepDeg;
+    if (sp) {
+      bool ok = false;
+      int16_t v = parse_int(sp, ok);
+      if (!ok || v <= 0) {
+        reply_err_flash(F("STEP_VAL"));
+        return;
+      }
+      step = v;
+    }
+    if (streqi(line, "PANL")) {
+      pan_step(static_cast<int16_t>(-step));
+    } else if (streqi(line, "PANR")) {
+      pan_step(step);
+    } else if (streqi(line, "TILTU")) {
+      tilt_step(step);
+    } else {
+      tilt_step(static_cast<int16_t>(-step));
+    }
     reply_ok();
     return;
   }
