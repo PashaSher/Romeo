@@ -41,7 +41,13 @@ static void print_help() {
   Serial.println(F("PANR [s] шаг вправо"));
   Serial.println(F("TILTU [s] шаг вверх"));
   Serial.println(F("TILTD [s] шаг вниз"));
-  Serial.println(F("HOME     башня в центр"));
+  Serial.println(F("PL/PR/TU/TD [v] плавный ход башни (по умолчанию kTurretDefaultRate)"));
+  Serial.println(F("TS        стоп плавного хода башни (синоним TSTOP)"));
+  Serial.println(F("PANV v   плавный поворот, v град/с (со знаком)"));
+  Serial.println(F("TILTV v  плавный наклон, v град/с (со знаком)"));
+  Serial.println(F("TURRETV p t   обе скорости сразу"));
+  Serial.println(F("TSTOP    остановить плавный ход башни"));
+  Serial.println(F("HOME     башня в центр (гасит скорость)"));
   Serial.println(F("POS      текущее: POS PAN <d> TILT <d>"));
   Serial.println(F("S1 n     серво 1 (PAN), 0..180 без лимитов"));
   Serial.println(F("S2 n     серво 2 (TILT), 0..180 без лимитов"));
@@ -295,6 +301,99 @@ static void handle_line(char* line) {
     return;
   }
 
+  // --- Скоростной режим башни (плавный ход) ---
+  if (streqi(line, "PANV")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    bool ok = false;
+    int16_t v = parse_int(sp, ok);
+    if (!ok) {
+      reply_err_flash(F("PANV_VAL"));
+      return;
+    }
+    pan_set_rate(v);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "TILTV")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    bool ok = false;
+    int16_t v = parse_int(sp, ok);
+    if (!ok) {
+      reply_err_flash(F("TILTV_VAL"));
+      return;
+    }
+    tilt_set_rate(v);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "TURRETV")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    char* sp2 = strchr(sp, ' ');
+    if (!sp2) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    *sp2++ = '\0';
+    bool ok1 = false;
+    bool ok2 = false;
+    int16_t pv = parse_int(sp, ok1);
+    int16_t tv = parse_int(sp2, ok2);
+    if (!ok1 || !ok2) {
+      reply_err_flash(F("TURRETV_VAL"));
+      return;
+    }
+    pan_set_rate(pv);
+    tilt_set_rate(tv);
+    reply_ok();
+    return;
+  }
+
+  if (streqi(line, "TSTOP") || streqi(line, "TS")) {
+    pan_set_rate(0);
+    tilt_set_rate(0);
+    reply_ok();
+    return;
+  }
+
+  // Однобуквенные «джойстиковые» команды плавного хода башни.
+  // Без аргумента берут cfg::kTurretDefaultRateDegPerSec.
+  // Плавно крутят сервопривод ДО ПРИХОДА ДРУГОЙ КОМАНДЫ (TS / любой PAN/TILT/HOME/STOP).
+  if (streqi(line, "PL") || streqi(line, "PR") ||
+      streqi(line, "TU") || streqi(line, "TD")) {
+    int16_t rate = cfg::kTurretDefaultRateDegPerSec;
+    if (sp) {
+      bool ok = false;
+      int16_t v = parse_int(sp, ok);
+      if (!ok || v <= 0) {
+        reply_err_flash(F("RATE_VAL"));
+        return;
+      }
+      rate = v;
+    }
+    if (streqi(line, "PL")) {
+      pan_set_rate(static_cast<int16_t>(-rate));
+    } else if (streqi(line, "PR")) {
+      pan_set_rate(rate);
+    } else if (streqi(line, "TU")) {
+      tilt_set_rate(rate);
+    } else {
+      tilt_set_rate(static_cast<int16_t>(-rate));
+    }
+    reply_ok();
+    return;
+  }
+
   if (streqi(line, "PANL") || streqi(line, "PANR") ||
       streqi(line, "TILTU") || streqi(line, "TILTD")) {
     int16_t step = cfg::kTurretStepDeg;
@@ -329,6 +428,8 @@ static void handle_line(char* line) {
   if (streqi(line, "STOP")) {
     motor1_set(0);
     motor2_set(0);
+    pan_set_rate(0);
+    tilt_set_rate(0);
     reply_ok();
     return;
   }

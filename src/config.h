@@ -37,6 +37,20 @@ constexpr uint8_t kTiltHomeDeg = 90;
 
 constexpr uint8_t kTurretStepDeg = 5;
 
+// Скоростной режим башни (PANV/TILTV) — макс. угл. скорость, град/с.
+// MG996R комфортно крутится 60–180 град/с; больше — рывки.
+constexpr int16_t kTurretMaxRateDegPerSec = 240;
+// Скорость по умолчанию для PL/PR/TU/TD (без аргумента), град/с.
+constexpr int16_t kTurretDefaultRateDegPerSec = 90;
+// Если loop «застрянет» дольше этого — клампим dt, чтобы не было прыжка.
+constexpr uint16_t kTurretMaxDtMs = 100;
+
+// Диапазон импульсов сервоприводов (для writeMicroseconds).
+// MG996R: типично 500..2500 мкс. Если сервоприводы упираются раньше лимита,
+// сузьте этот диапазон или подвиньте лимиты углов выше.
+constexpr uint16_t kServoMinPulseUs = 500;
+constexpr uint16_t kServoMaxPulseUs = 2500;
+
 // --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
 constexpr uint8_t kIrLedPin = 11;
 constexpr uint8_t kIrReceiverPin = 3;  // INT на Leonardo

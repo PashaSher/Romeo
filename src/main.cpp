@@ -14,4 +14,5 @@ void setup() {
 
 void loop() {
   protocol_tick();
+  turret_tick();
 }
