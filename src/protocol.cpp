@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "config.h"
 #include "ir_combat.h"
+#include "led.h"
 #include "motors.h"
 #include "servos.h"
 #include <ctype.h>
@@ -52,6 +53,8 @@ static void print_help() {
   Serial.println(F("S1 n     серво 1 (PAN), 0..180 без лимитов"));
   Serial.println(F("S2 n     серво 2 (TILT), 0..180 без лимитов"));
   Serial.println(F("FIRE/IR  ИК-импульс"));
+  Serial.println(F("LON/LOFF/LTG  бортовой светодиод"));
+  Serial.println(F("LED ON|OFF|T   то же, развёрнуто; LED без аргумента — статус"));
   Serial.println(F("PING     проверка связи"));
   Serial.println(F("?        эта справка"));
 }
@@ -422,6 +425,47 @@ static void handle_line(char* line) {
   if (streqi(line, "FIRE") || streqi(line, "IR")) {
     ir_fire_pulse();
     reply_ok();
+    return;
+  }
+
+  // --- Бортовой светодиод ---
+  if (streqi(line, "LON")) {
+    led_set(true);
+    reply_ok();
+    return;
+  }
+  if (streqi(line, "LOFF")) {
+    led_set(false);
+    reply_ok();
+    return;
+  }
+  if (streqi(line, "LTG") || streqi(line, "LTOGGLE")) {
+    led_toggle();
+    reply_ok();
+    return;
+  }
+  if (streqi(line, "LED")) {
+    if (!sp) {
+      Serial.print(F("LED "));
+      Serial.println(led_get() ? F("ON") : F("OFF"));
+      return;
+    }
+    if (streqi(sp, "ON") || strcmp(sp, "1") == 0) {
+      led_set(true);
+      reply_ok();
+      return;
+    }
+    if (streqi(sp, "OFF") || strcmp(sp, "0") == 0) {
+      led_set(false);
+      reply_ok();
+      return;
+    }
+    if (streqi(sp, "T") || streqi(sp, "TOGGLE")) {
+      led_toggle();
+      reply_ok();
+      return;
+    }
+    reply_err_flash(F("LED_VAL"));
     return;
   }
 

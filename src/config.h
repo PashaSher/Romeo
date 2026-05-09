@@ -51,6 +51,9 @@ constexpr uint16_t kTurretMaxDtMs = 100;
 constexpr uint16_t kServoMinPulseUs = 500;
 constexpr uint16_t kServoMaxPulseUs = 2500;
 
+// --- Бортовой светодиод (на Leonardo это пин 13) ---
+constexpr uint8_t kLedPin = LED_BUILTIN;
+
 // --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
 constexpr uint8_t kIrLedPin = 11;
 constexpr uint8_t kIrReceiverPin = 3;  // INT на Leonardo
