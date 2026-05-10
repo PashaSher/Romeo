@@ -57,12 +57,21 @@ constexpr uint8_t kLedPin = LED_BUILTIN;
 // --- АЦП: опорное напряжение (мВ). По умолчанию AVCC ≈ 5В (питание от USB).
 // Если используете AREF/INTERNAL — поменяйте здесь и при необходимости
 // добавьте analogReference() в setup().
-constexpr uint16_t kAdcReferenceMv = 5000;
+constexpr uint16_t kAdcReferenceMv = 5170;
 // Сколько каналов A0..A(N-1) разрешено опрашивать командой "A <n>".
 // На Leonardo «свободны» от моторов/серво/ИК пины A0..A5.
 constexpr uint8_t kAdcChannels = 6;
 // Усреднение уменьшает шум и влияние переключения мультиплексора АЦП.
 constexpr uint8_t kAdcSamples = 16;
+
+// --- Измерение батареи шуруповёрта через делитель на A1 ---
+// Схема: BAT+ -- R1 -- A1 -- R2 -- GND, R1=47k, R2=10k.
+constexpr uint8_t kBatteryAdcChannel = 1;
+constexpr uint32_t kBatteryDividerR1Ohm = 47000;
+constexpr uint32_t kBatteryDividerR2Ohm = 10000;
+// Поправка реальных резисторов/АЦП в ppm. 1010000 = +1.0%.
+// В паре с kAdcReferenceMv=5170 это соответствует вашим измерениям.
+constexpr uint32_t kBatteryCalibrationPpm = 1010000;
 
 // --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
 constexpr uint8_t kIrLedPin = 11;

@@ -57,6 +57,7 @@ static void print_help() {
   Serial.println(F("LON/LOFF/LTG  бортовой светодиод"));
   Serial.println(F("LED ON|OFF|T   то же, развёрнуто; LED без аргумента — статус"));
   Serial.println(F("A0..A5 / A n  АЦП -> A<n> <raw_0_1023> <mV>"));
+  Serial.println(F("VBAT     батарея на A1 через 47k/10k -> VBAT <mV> <raw> <pin_mV>"));
   Serial.println(F("VCC      измерить AVCC через bandgap и взять как референс"));
   Serial.println(F("VREF [mv|AUTO]  показать/задать опорное напряжение АЦП"));
   Serial.println(F("PING     проверка связи"));
@@ -476,6 +477,27 @@ static void handle_line(char* line) {
     Serial.print(raw);
     Serial.write(' ');
     Serial.println(mv);
+    return;
+  }
+
+  // VBAT — напряжение батареи до делителя на A1.
+  // Ответ: VBAT <battery_mV> <raw> <pin_mV>
+  if (streqi(line, "VBAT")) {
+    uint16_t raw;
+    uint32_t pin_mv;
+    adc_read(cfg::kBatteryAdcChannel, raw, pin_mv);
+
+    uint32_t divider_num = cfg::kBatteryDividerR1Ohm + cfg::kBatteryDividerR2Ohm;
+    uint32_t divider_den = cfg::kBatteryDividerR2Ohm;
+    uint32_t battery_mv = (pin_mv * divider_num + (divider_den / 2)) / divider_den;
+    battery_mv = (battery_mv * cfg::kBatteryCalibrationPpm + 500000UL) / 1000000UL;
+
+    Serial.print(F("VBAT "));
+    Serial.print(battery_mv);
+    Serial.write(' ');
+    Serial.print(raw);
+    Serial.write(' ');
+    Serial.println(pin_mv);
     return;
   }
 

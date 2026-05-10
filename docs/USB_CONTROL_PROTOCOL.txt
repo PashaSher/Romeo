@@ -205,6 +205,30 @@ A <n>
   То же, но номер канала аргументом.
   Пример:  A 3\n   →  A3 1023 5000
 
+VBAT
+  Прочитать батарею шуруповёрта через делитель на A1.
+  Настройки в config.h:
+    kBatteryAdcChannel = 1       (A1)
+    kBatteryDividerR1Ohm = 47000 (BAT+ → A1)
+    kBatteryDividerR2Ohm = 10000 (A1 → GND)
+    kBatteryCalibrationPpm = 1010000
+
+  Ответ:
+      VBAT <battery_mV> <raw> <pin_mV>
+
+  Где:
+    battery_mV — пересчитанное напряжение батареи до делителя;
+    raw        — сырое значение АЦП 0..1023;
+    pin_mV     — напряжение непосредственно на A1.
+
+  Пример:
+    запрос: VBAT\n
+    ответ : VBAT 19220 669 3372
+
+  Для ваших измерений 18.3→19.22, 18.0→18.88 и т.д. выставлены:
+    kAdcReferenceMv = 5170
+    kBatteryCalibrationPpm = 1010000
+
 ПРИМЕЧАНИЯ
   • Опорное напряжение по умолчанию задано в config.h (kAdcReferenceMv = 5000).
     Реальное AVCC при питании от USB обычно НЕ равно ровно 5.000В
