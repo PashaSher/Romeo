@@ -1,4 +1,5 @@
 #include "protocol.h"
+#include "adc.h"
 #include "config.h"
 #include "ir_combat.h"
 #include "led.h"
@@ -56,6 +57,8 @@ static void print_help() {
   Serial.println(F("LON/LOFF/LTG  бортовой светодиод"));
   Serial.println(F("LED ON|OFF|T   то же, развёрнуто; LED без аргумента — статус"));
   Serial.println(F("A0..A5 / A n  АЦП -> A<n> <raw_0_1023> <mV>"));
+  Serial.println(F("VCC      измерить AVCC через bandgap и взять как референс"));
+  Serial.println(F("VREF [mv|AUTO]  показать/задать опорное напряжение АЦП"));
   Serial.println(F("PING     проверка связи"));
   Serial.println(F("?        эта справка"));
 }
@@ -441,9 +444,9 @@ static void handle_line(char* line) {
       reply_err_flash(F("ADC_CH"));
       return;
     }
-    uint8_t pin = static_cast<uint8_t>(A0 + ch);
-    int raw = analogRead(pin);
-    uint32_t mv = (static_cast<uint32_t>(raw) * cfg::kAdcReferenceMv) / 1023UL;
+    uint16_t raw;
+    uint32_t mv;
+    adc_read(ch, raw, mv);
     Serial.print(F("A"));
     Serial.print(ch);
     Serial.write(' ');
@@ -464,15 +467,51 @@ static void handle_line(char* line) {
       reply_err_flash(F("ADC_CH"));
       return;
     }
-    uint8_t pin = static_cast<uint8_t>(A0 + v);
-    int raw = analogRead(pin);
-    uint32_t mv = (static_cast<uint32_t>(raw) * cfg::kAdcReferenceMv) / 1023UL;
+    uint16_t raw;
+    uint32_t mv;
+    adc_read(static_cast<uint8_t>(v), raw, mv);
     Serial.print(F("A"));
     Serial.print(v);
     Serial.write(' ');
     Serial.print(raw);
     Serial.write(' ');
     Serial.println(mv);
+    return;
+  }
+
+  // VCC — измерить фактическое напряжение питания МК через 1.1В bandgap
+  // и принять его как опорное для следующих чтений A0..A5.
+  if (streqi(line, "VCC")) {
+    uint16_t vcc = adc_calibrate_to_vcc();
+    Serial.print(F("VCC "));
+    Serial.println(vcc);
+    return;
+  }
+
+  // VREF              — показать текущее опорное напряжение (мВ)
+  // VREF <mv>         — задать вручную (например, измеренное мультиметром)
+  // VREF AUTO         — то же, что VCC
+  if (streqi(line, "VREF")) {
+    if (!sp) {
+      Serial.print(F("VREF "));
+      Serial.println(adc_reference_mv());
+      return;
+    }
+    if (streqi(sp, "AUTO")) {
+      uint16_t vcc = adc_calibrate_to_vcc();
+      Serial.print(F("VREF "));
+      Serial.println(vcc);
+      return;
+    }
+    bool ok = false;
+    int16_t v = parse_int(sp, ok);
+    if (!ok || v < 500 || v > 7000) {
+      reply_err_flash(F("VREF_VAL"));
+      return;
+    }
+    adc_set_reference_mv(static_cast<uint16_t>(v));
+    Serial.print(F("VREF "));
+    Serial.println(adc_reference_mv());
     return;
   }
 

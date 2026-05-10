@@ -61,6 +61,8 @@ constexpr uint16_t kAdcReferenceMv = 5000;
 // Сколько каналов A0..A(N-1) разрешено опрашивать командой "A <n>".
 // На Leonardo «свободны» от моторов/серво/ИК пины A0..A5.
 constexpr uint8_t kAdcChannels = 6;
+// Усреднение уменьшает шум и влияние переключения мультиплексора АЦП.
+constexpr uint8_t kAdcSamples = 16;
 
 // --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
 constexpr uint8_t kIrLedPin = 11;

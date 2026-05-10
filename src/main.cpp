@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "adc.h"
 #include "config.h"
 #include "ir_combat.h"
 #include "led.h"
@@ -10,6 +11,7 @@ void setup() {
   motors_init();
   servos_init();
   led_init();
+  adc_init();
   ir_combat_init();
   protocol_init();
 }
