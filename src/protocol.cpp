@@ -55,6 +55,7 @@ static void print_help() {
   Serial.println(F("FIRE/IR  ИК-импульс"));
   Serial.println(F("LON/LOFF/LTG  бортовой светодиод"));
   Serial.println(F("LED ON|OFF|T   то же, развёрнуто; LED без аргумента — статус"));
+  Serial.println(F("A0..A5 / A n  АЦП -> A<n> <raw_0_1023> <mV>"));
   Serial.println(F("PING     проверка связи"));
   Serial.println(F("?        эта справка"));
 }
@@ -425,6 +426,53 @@ static void handle_line(char* line) {
   if (streqi(line, "FIRE") || streqi(line, "IR")) {
     ir_fire_pulse();
     reply_ok();
+    return;
+  }
+
+  // --- АЦП: A0..A(kAdcChannels-1) ---
+  // Форматы:
+  //   "A0", "A1", ... "A5"      — короткая форма
+  //   "A 0", "A 3"              — общая форма
+  // Ответ:  A<ch> <raw_0_1023> <millivolts>
+  if ((line[0] == 'A' || line[0] == 'a') && line[1] >= '0' && line[1] <= '9' &&
+      line[2] == '\0') {
+    uint8_t ch = static_cast<uint8_t>(line[1] - '0');
+    if (ch >= cfg::kAdcChannels) {
+      reply_err_flash(F("ADC_CH"));
+      return;
+    }
+    uint8_t pin = static_cast<uint8_t>(A0 + ch);
+    int raw = analogRead(pin);
+    uint32_t mv = (static_cast<uint32_t>(raw) * cfg::kAdcReferenceMv) / 1023UL;
+    Serial.print(F("A"));
+    Serial.print(ch);
+    Serial.write(' ');
+    Serial.print(raw);
+    Serial.write(' ');
+    Serial.println(mv);
+    return;
+  }
+
+  if (streqi(line, "A")) {
+    if (!sp) {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    bool ok = false;
+    int16_t v = parse_int(sp, ok);
+    if (!ok || v < 0 || v >= cfg::kAdcChannels) {
+      reply_err_flash(F("ADC_CH"));
+      return;
+    }
+    uint8_t pin = static_cast<uint8_t>(A0 + v);
+    int raw = analogRead(pin);
+    uint32_t mv = (static_cast<uint32_t>(raw) * cfg::kAdcReferenceMv) / 1023UL;
+    Serial.print(F("A"));
+    Serial.print(v);
+    Serial.write(' ');
+    Serial.print(raw);
+    Serial.write(' ');
+    Serial.println(mv);
     return;
   }
 

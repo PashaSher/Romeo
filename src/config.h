@@ -54,6 +54,14 @@ constexpr uint16_t kServoMaxPulseUs = 2500;
 // --- Бортовой светодиод (на Leonardo это пин 13) ---
 constexpr uint8_t kLedPin = LED_BUILTIN;
 
+// --- АЦП: опорное напряжение (мВ). По умолчанию AVCC ≈ 5В (питание от USB).
+// Если используете AREF/INTERNAL — поменяйте здесь и при необходимости
+// добавьте analogReference() в setup().
+constexpr uint16_t kAdcReferenceMv = 5000;
+// Сколько каналов A0..A(N-1) разрешено опрашивать командой "A <n>".
+// На Leonardo «свободны» от моторов/серво/ИК пины A0..A5.
+constexpr uint8_t kAdcChannels = 6;
+
 // --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
 constexpr uint8_t kIrLedPin = 11;
 constexpr uint8_t kIrReceiverPin = 3;  // INT на Leonardo
