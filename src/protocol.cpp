@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "adc.h"
 #include "config.h"
+#include "display.h"
 #include "ir_combat.h"
 #include "led.h"
 #include "motors.h"
@@ -60,6 +61,9 @@ static void print_help() {
   Serial.println(F("VBAT     батарея на A1 через 47k/10k -> VBAT <mV> <raw> <pin_mV>"));
   Serial.println(F("VCC      измерить AVCC через bandgap и взять как референс"));
   Serial.println(F("VREF [mv|AUTO]  показать/задать опорное напряжение АЦП"));
+  Serial.println(F("MSG t    текст на OLED (массив до kMsgCount строк)"));
+  Serial.println(F("MSGCLR   очистить экран и массив сообщений"));
+  Serial.println(F("MSGL     список сообщений в USB"));
   Serial.println(F("PING     проверка связи"));
   Serial.println(F("?        эта справка"));
 }
@@ -583,6 +587,38 @@ static void handle_line(char* line) {
     motor2_set(0);
     pan_set_rate(0);
     tilt_set_rate(0);
+    reply_ok();
+    return;
+  }
+
+  // --- OLED SSD1306: массив сообщений ---
+  if (streqi(line, "MSG")) {
+    if (!sp || *sp == '\0') {
+      reply_err_flash(F("ARG"));
+      return;
+    }
+    display_add_message(sp);
+    reply_ok();
+    return;
+  }
+  if (streqi(line, "MSGCLR")) {
+    display_clear_messages();
+    reply_ok();
+    return;
+  }
+  if (streqi(line, "MSGL")) {
+    uint8_t count = display_message_count();
+    Serial.print(F("MSGL "));
+    Serial.println(count);
+    char buf[cfg::kMsgTextLen];
+    for (uint8_t i = 0; i < count; ++i) {
+      if (display_get_message(i, buf, sizeof(buf))) {
+        Serial.print(F("MSG "));
+        Serial.print(i);
+        Serial.write(' ');
+        Serial.println(buf);
+      }
+    }
     reply_ok();
     return;
   }

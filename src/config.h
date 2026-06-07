@@ -73,9 +73,17 @@ constexpr uint32_t kBatteryDividerR2Ohm = 10000;
 // В паре с kAdcReferenceMv=5170 это соответствует вашим измерениям.
 constexpr uint32_t kBatteryCalibrationPpm = 1010000;
 
-// --- ИК: передатчик (мигание несущей ~38 кГц), приёмник (прерывание) ---
+// --- OLED SSD1306 128x64, I2C: SDA=D2, SCL=D3 (Leonardo) ---
+constexpr uint8_t kOledI2cAddr = 0x3C;
+constexpr uint8_t kOledTextSize = 4;   // 1=мелкий, 2=средний, 4=крупный (≈5 симв/строка)
+constexpr uint8_t kMsgCount = 4;       // массив сообщений (экономия RAM)
+constexpr uint8_t kMsgTextLen = 48;    // символов в строке MSG
+constexpr uint16_t kMsgScrollMs = 3000; // интервал смены слова на OLED, мс
+constexpr uint8_t kMsgMaxWords = 16;    // макс. слов в одном сообщении
+
+// --- ИК: передатчик (мигание несущей ~38 кГц), приёмник ---
 constexpr uint8_t kIrLedPin = 11;
-constexpr uint8_t kIrReceiverPin = 3;  // INT на Leonardo
+constexpr uint8_t kIrReceiverPin = 12;  // D12: D3 занят I2C SCL
 
 constexpr uint16_t kIrCarrierHalfUs = 13;   // ~38 кГц
 constexpr uint16_t kIrFireDurationMs = 18;

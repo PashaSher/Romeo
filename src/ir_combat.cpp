@@ -7,13 +7,14 @@ struct HitEvent {
 };
 
 static HitEvent s_queue[cfg::kHitQueueDepth];
-static volatile uint8_t s_q_head;
-static volatile uint8_t s_q_tail;
+static uint8_t s_q_head;
+static uint8_t s_q_tail;
+static uint16_t s_seq_next = 1;
 
-static volatile uint32_t s_last_edge_us;
-static volatile uint16_t s_seq_next = 1;
+static uint8_t s_last_level = HIGH;
+static uint32_t s_last_hit_ms = 0;
 
-static void push_hit_isr(uint32_t t_ms, uint16_t seq) {
+static void push_hit(uint32_t t_ms, uint16_t seq) {
   uint8_t next = static_cast<uint8_t>((s_q_tail + 1) % cfg::kHitQueueDepth);
   if (next == s_q_head) {
     return;
@@ -23,25 +24,12 @@ static void push_hit_isr(uint32_t t_ms, uint16_t seq) {
   s_q_tail = next;
 }
 
-static void on_ir_edge() {
-  uint32_t now = micros();
-  if ((uint32_t)(now - s_last_edge_us) < (cfg::kIrHitDebounceMs * 1000UL)) {
-    return;
-  }
-  s_last_edge_us = now;
-  uint16_t seq = s_seq_next++;
-  push_hit_isr(millis(), seq);
-}
-
 bool ir_hit_pop(uint32_t& out_time_ms, uint16_t& out_seq) {
-  noInterrupts();
   if (s_q_head == s_q_tail) {
-    interrupts();
     return false;
   }
   HitEvent e = s_queue[s_q_head];
   s_q_head = static_cast<uint8_t>((s_q_head + 1) % cfg::kHitQueueDepth);
-  interrupts();
   out_time_ms = e.time_ms;
   out_seq = e.seq;
   return true;
@@ -61,15 +49,24 @@ void ir_fire_pulse() {
 
 void ir_combat_init() {
   s_q_head = s_q_tail = 0;
-  s_last_edge_us = 0;
+  s_last_hit_ms = 0;
+  s_seq_next = 1;
 
   pinMode(cfg::kIrLedPin, OUTPUT);
   digitalWrite(cfg::kIrLedPin, LOW);
 
   pinMode(cfg::kIrReceiverPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(cfg::kIrReceiverPin), on_ir_edge, FALLING);
+  s_last_level = digitalRead(cfg::kIrReceiverPin);
 }
 
 void ir_combat_poll() {
-  // Резерв: фильтрация/агрегация в главном цикле при необходимости
+  uint8_t level = digitalRead(cfg::kIrReceiverPin);
+  if (level == LOW && s_last_level == HIGH) {
+    uint32_t now_ms = millis();
+    if (now_ms - s_last_hit_ms >= cfg::kIrHitDebounceMs) {
+      s_last_hit_ms = now_ms;
+      push_hit(now_ms, s_seq_next++);
+    }
+  }
+  s_last_level = level;
 }
